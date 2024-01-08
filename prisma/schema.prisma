@@ -11,18 +11,6 @@ datasource db {
     relationMode = "prisma"
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
-
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())
@@ -40,6 +28,7 @@ model Account {
     user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([provider, providerAccountId])
+    @@index([userId])
 }
 
 model Session {
@@ -48,17 +37,111 @@ model Session {
     userId       String
     expires      DateTime
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
+    id                 String               @id @default(cuid())
+    name               String?
+    email              String?              @unique
+    emailVerified      DateTime?
+    image              String?
+    backgroundImage    String?              @db.Text
+    handle             String?              @unique
+    accounts           Account[]
+    sessions           Session[]
+    videos             Video[]
+    VideoEngagement    VideoEngagement[]
+    Comment            Comment[]
+    Announcement       Announcement[]
+    AnnounceEngagement AnnounceEngagement[]
+}
+
+model Video {
+    id                 String               @id @default(cuid())
+    title              String?              @db.Text
+    thumbnailUrl       String?              @db.Text
+    description        String?              @db.Text
+    videoUrl           String               @db.Text
+    publish            Boolean              @default(true)
+    userId             String
+    createdAt          DateTime             @default(now())
+    updatedAt          DateTime             @updatedAt
+    user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+    VideoEngagement    VideoEngagement[]
+    Comment            Comment[]
+    AnnounceEngagement AnnounceEngagement[]
+
+    @@index([userId])
+}
+
+model VideoEngagement {
+    id             String         @id @default(cuid())
+    userId         String?
+    videoId        String?
+    createdAt      DateTime       @default(now())
+    updatedAt      DateTime       @updatedAt
+    engagementType EngagementType
+
+    user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+    video Video? @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([videoId])
+}
+
+enum EngagementType {
+    LIKE
+    DISLIKE
+    VIEW
+    SAVE
+    FOLLOW
+}
+
+model Comment {
+    id      String  @id @default(cuid())
+    message String? @db.Text
+    videoId String
+    userId  String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+    video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([videoId])
+}
+
+model Announcement {
+    id      String @id @default(cuid())
+    message String @db.Text
+    userId  String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    AnnouncementEngagement AnnouncementEngagement[]
+
+    @@index([userId])
+}
+
+model AnnouncementEngagement {
+    userId         String
+    announcementId String
+    createdAt      DateTime       @default(now())
+    updatedAt      DateTime       @updatedAt
+    engagementType EngagementType
+
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+    @@id([userId, announcementId])
+    @@index([userId])
+    @@index([announcementId])
 }
 
 model VerificationToken {
